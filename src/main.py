@@ -28,19 +28,19 @@ class Main(QMainWindow, design):
         if re.match('^\d+[.\d]*$', self.amount.text()):
             self.get.setEnabled(True)
             self.spend.setEnabled(True)
-            self.reason.setPlaceholderText('السبب')
+            self.reason.setPlaceholderText('reason')
         elif self.amount.text() == '':
-            self.reason.setPlaceholderText('السبب')
+            self.reason.setPlaceholderText('reason')
             self.get.setEnabled(False)
             self.spend.setEnabled(False)
         else:
-            self.reason.setPlaceholderText('خانة المبلغ سجل فيها ارقام فقط')
+            self.reason.setPlaceholderText('the amount field takes only numbers')
             self.get.setEnabled(False)
             self.spend.setEnabled(False)
 
     def init_ui(self):
         # changes at the load of the app
-        self.setWindowTitle('برنامج ادارة المصاريف')
+        self.setWindowTitle('my_wallet')
         self.date.setDisplayFormat('dd/MM/yyyy')
         self.date.setCalendarPopup(True)
         self.date.setDate(datetime.date.today())
@@ -61,7 +61,7 @@ class Main(QMainWindow, design):
         ins = self.SPEND.insert().values(SPEND=amount, DETAILS=reason, DATE=properDate)
         conn = self.engine.connect()
         conn.execute(ins)
-        print('تم تسجيل البيانات بنجاح')
+        print('Date inserted successfully')
         self.amount.setText('')
         self.reason.setText('')
 
@@ -74,7 +74,7 @@ class Main(QMainWindow, design):
         ins = self.GET.insert().values(GET=amount, DETAILS=reason, DATE=properDate)
         conn = self.engine.connect()
         conn.execute(ins)
-        print('تم تسجيل البيانات بنجاح')
+        print('Date inserted successfully')
         self.amount.setText('')
         self.reason.setText('')
         
