@@ -29,7 +29,7 @@
        <set>Qt::AlignCenter</set>
       </property>
       <property name="placeholderText">
-       <string>المبلغ</string>
+       <string>amount</string>
       </property>
      </widget>
     </item>
@@ -42,7 +42,7 @@
        <bool>false</bool>
       </property>
       <property name="placeholderText">
-       <string>السبب</string>
+       <string>reason</string>
       </property>
      </widget>
     </item>
@@ -58,21 +58,21 @@
       <item>
        <widget class="QPushButton" name="details">
         <property name="text">
-         <string>إلى صفحة التفاصيل</string>
+         <string>to details page</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="spend">
         <property name="text">
-         <string>صرف</string>
+         <string>spend</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="get">
         <property name="text">
-         <string>تحصيل</string>
+         <string>get</string>
         </property>
        </widget>
       </item>
