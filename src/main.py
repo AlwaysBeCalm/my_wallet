@@ -3,8 +3,8 @@ import os
 import sys
 import re
 
+from src.details import Details
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
 from PyQt5.uic import *
 from sqlalchemy import *
 
@@ -14,13 +14,12 @@ design, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/main_page.
 class Main(QMainWindow, design):
     def __init__(self):
         super(Main, self).__init__()
-        loadUi('../ui/main_page.ui')
         QMainWindow.__init__(self)
         self.setupUi(self)
+        self.connect_to_db()
         self.init_ui()
         self.check()
         self.handle_buttons()
-        self.connect_to_db()
 
     def check(self):
         if re.match('^\\d+[.\\d]*$', self.amount.text()):
@@ -47,33 +46,33 @@ class Main(QMainWindow, design):
         self.amount.setFocus(True)
 
     def handle_buttons(self):
-        self.get.clicked.connect(self.add_get)
-        self.spend.clicked.connect(self.add_spend)
+        self.get.clicked.connect(self.add_got)
+        self.spend.clicked.connect(self.add_spent)
         self.details.clicked.connect(self.go_to_details)
 
     # add spend
-    def add_spend(self):
-        self.add_to('spend')
+    def add_spent(self):
+        self.add_to('spent')
 
     # add get
-    def add_get(self):
-        self.add_to('get')
+    def add_got(self):
+        self.add_to('got')
 
     def add_to(self, table_name):
         amount = self.amount.text()
         reason = self.reason.text()
         date = self.date.date()
-        properDate = datetime.datetime(date.year(), date.month(), date.day())
-        if table_name.lower() == 'spend':
+        proper_date = datetime.datetime(date.year(), date.month(), date.day())
+        if table_name.lower() == 'spent':
             if reason == '':
-                self.ins = self.SPEND.insert().values(SPEND=amount, DETAILS='no details', DATE=properDate)
+                self.ins = self.SPENT.insert().values(SPENT=amount, DETAILS='no details', DATE=proper_date)
             else:
-                self.ins = self.SPEND.insert().values(SPEND=amount, DETAILS=reason, DATE=properDate)
-        elif table_name.lower() == 'get':
+                self.ins = self.SPENT.insert().values(SPENT=amount, DETAILS=reason, DATE=proper_date)
+        elif table_name.lower() == 'got':
             if reason == '':
-                self.ins = self.GET.insert().values(GET=amount, DETAILS='no details', DATE=properDate)
+                self.ins = self.GOT.insert().values(GOT=amount, DETAILS='no details', DATE=proper_date)
             else:
-                self.ins = self.GET.insert().values(GET=amount, DETAILS=reason, DATE=properDate)
+                self.ins = self.GOT.insert().values(GOT=amount, DETAILS=reason, DATE=proper_date)
         conn = self.engine.connect()
         conn.execute(self.ins)
         self.show_msg()
@@ -82,13 +81,15 @@ class Main(QMainWindow, design):
 
     # go to details page
     def go_to_details(self):
-        print('went to details page')
+        self.window().hide()
+        self.dt = Details()
+        self.dt.show()
 
     # a dialog box after inserting some data
     def show_msg(self):
         done = QMessageBox()
         done.setIcon(QMessageBox.Information)
-        done.setText('''Data inserted successfully''')
+        done.setText('Data inserted successfully')
         done.setWindowTitle('Info')
         # add another button to go to details page
         done.exec_()
@@ -102,21 +103,21 @@ class Main(QMainWindow, design):
         else:
             self.engine = create_engine('sqlite:///' + database_dir + '/finance.db')
         meta = MetaData()
-        self.SPEND = Table(
-            'SPEND', meta,
+        self.SPENT = Table(
+            'SPENT', meta,
             Column('ID', Integer, primary_key=True,
                    nullable=False),
-            Column('SPEND', Float, nullable=False),
+            Column('SPENT', Float, nullable=False),
             # default here is to set default value for date column
             Column('DATE', Date, nullable=False, default=datetime.date.today()),
             Column('DETAILS', String(255))
             # sqlite_autoincrement=True,  # to set autoincrement on the pk
         )
-        self.GET = Table(
-            'GET', meta,
+        self.GOT = Table(
+            'GOT', meta,
             Column('ID', Integer, primary_key=True,
                    nullable=False, autoincrement="auto"),
-            Column('GET', Float, nullable=False),
+            Column('GOT', Float, nullable=False),
             Column('DATE', Date, nullable=False, default=datetime.date.today()),
             Column('DETAILS', String(255)),
             # sqlite_autoincrement=True,
