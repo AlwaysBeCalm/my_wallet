@@ -85,7 +85,7 @@ class Details(QMainWindow, design):
             os.mkdir(database_dir)
             self.engine = create_engine('sqlite:///' + database_dir + '/finance.db')
         else:
-            self.engine = create_engine('sqlite:///' + database_dir + '/finance.db', echo=True)
+            self.engine = create_engine('sqlite:///' + database_dir + '/finance.db')
         self.conn = self.engine.connect()
         meta = MetaData()
         self.SPENT = Table(
