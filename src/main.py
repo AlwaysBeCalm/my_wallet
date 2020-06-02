@@ -4,19 +4,17 @@ import sys
 import re
 
 from PyQt5.QtWidgets import *
-# from PyQt5.QtCore import *
+from PyQt5.QtCore import *
 from PyQt5.uic import *
 from sqlalchemy import *
 
-design, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/ui.ui'))
+design, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/main_page.ui'))
 
 
-# خانة السبب، خليها تتعبى وتظهر الاسباب اللي ادخلها الuser من قبل
-# في صفحة الإحصائيات، اظهر المتوسط كل اسبوع وكل شهر، والمجموع كل اسبوع ومن بداية الشهر لليوم الحالي
 class Main(QMainWindow, design):
     def __init__(self):
         super(Main, self).__init__()
-        loadUi('../ui/ui.ui')
+        loadUi('../ui/main_page.ui')
         QMainWindow.__init__(self)
         self.setupUi(self)
         self.init_ui()
@@ -25,7 +23,7 @@ class Main(QMainWindow, design):
         self.connect_to_db()
 
     def check(self):
-        if re.match('^\d+[.\d]*$', self.amount.text()):
+        if re.match('^\\d+[.\\d]*$', self.amount.text()):
             self.get.setEnabled(True)
             self.spend.setEnabled(True)
             self.reason.setPlaceholderText('reason')
@@ -44,8 +42,9 @@ class Main(QMainWindow, design):
         self.date.setDisplayFormat('dd/MM/yyyy')
         self.date.setCalendarPopup(True)
         self.date.setDate(datetime.date.today())
+        self.date.setMaximumDate(datetime.date.today())  # set maximum date in the calendar is today's date
         self.amount.textChanged.connect(self.check)
-        self.details.setFocus(True)
+        self.amount.setFocus(True)
 
     def handle_buttons(self):
         self.get.clicked.connect(self.add_get)
@@ -54,34 +53,45 @@ class Main(QMainWindow, design):
 
     # add spend
     def add_spend(self):
-        amount = self.amount.text()
-        reason = self.reason.text()
-        date = self.date.date()
-        properDate = datetime.datetime(date.year(), date.month(), date.day())
-        ins = self.SPEND.insert().values(SPEND=amount, DETAILS=reason, DATE=properDate)
-        conn = self.engine.connect()
-        conn.execute(ins)
-        print('Date inserted successfully')
-        self.amount.setText('')
-        self.reason.setText('')
+        self.add_to('spend')
 
     # add get
     def add_get(self):
+        self.add_to('get')
+
+    def add_to(self, table_name):
         amount = self.amount.text()
         reason = self.reason.text()
         date = self.date.date()
         properDate = datetime.datetime(date.year(), date.month(), date.day())
-        ins = self.GET.insert().values(GET=amount, DETAILS=reason, DATE=properDate)
+        if table_name.lower() == 'spend':
+            if reason == '':
+                self.ins = self.SPEND.insert().values(SPEND=amount, DETAILS='no details', DATE=properDate)
+            else:
+                self.ins = self.SPEND.insert().values(SPEND=amount, DETAILS=reason, DATE=properDate)
+        elif table_name.lower() == 'get':
+            if reason == '':
+                self.ins = self.GET.insert().values(GET=amount, DETAILS='no details', DATE=properDate)
+            else:
+                self.ins = self.GET.insert().values(GET=amount, DETAILS=reason, DATE=properDate)
         conn = self.engine.connect()
-        conn.execute(ins)
-        print('Date inserted successfully')
+        conn.execute(self.ins)
+        self.show_msg()
         self.amount.setText('')
         self.reason.setText('')
-        
 
     # go to details page
     def go_to_details(self):
         print('went to details page')
+
+    # a dialog box after inserting some data
+    def show_msg(self):
+        done = QMessageBox()
+        done.setIcon(QMessageBox.Information)
+        done.setText('''Data inserted successfully''')
+        done.setWindowTitle('Info')
+        # add another button to go to details page
+        done.exec_()
 
     def connect_to_db(self):
         current_dir = os.path.dirname(os.path.realpath(__file__))
