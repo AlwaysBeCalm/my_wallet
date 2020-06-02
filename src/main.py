@@ -96,11 +96,11 @@ class Main(QMainWindow, design):
     def connect_to_db(self):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         database_dir = current_dir + '/../database'
-        # if not os.path.exists(database_dir):
-        #     os.mkdir(database_dir)
-        #     engine = create_engine('sqlite:///' + database_dir + '/finance.db')
-        # else:
-        self.engine = create_engine('sqlite:///' + database_dir + '/finance.db')
+        if not os.path.exists(database_dir):
+            os.mkdir(database_dir)
+            self.engine = create_engine('sqlite:///' + database_dir + '/finance.db')
+        else:
+            self.engine = create_engine('sqlite:///' + database_dir + '/finance.db')
         meta = MetaData()
         self.SPEND = Table(
             'SPEND', meta,
