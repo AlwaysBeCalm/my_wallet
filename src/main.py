@@ -3,7 +3,7 @@ import os
 import sys
 import re
 
-from src.details import Details
+from details import Details
 from PyQt5.QtWidgets import *
 from PyQt5.uic import *
 from sqlalchemy import *
