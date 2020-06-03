@@ -2,12 +2,17 @@ import datetime
 import os
 import sys
 import re
+import platform
+
 from details import Details
 from PyQt5.QtWidgets import *
 from PyQt5.uic import *
 from sqlalchemy import *
 
-path_folder = os.path.join(os.path.dirname(__file__), '../.venv/lib/python3.7/site-packages')
+if platform.system() in ['windows', 'Windows']:
+	path_folder = os.path.join(os.path.dirname(__file__), '../.venv/Lib/site-packages')
+else:
+	path_folder = os.path.join(os.path.dirname(__file__), '../.venv/lib/python3.7/site-packages')
 if not os.path.exists(path_folder):
     sys.path.append(path_folder)
     app = QApplication(sys.argv)
