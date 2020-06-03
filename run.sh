@@ -20,7 +20,6 @@ loc=$PWD
 echo """welcome to venv creator script
 this script will create a .venv folder for the app 'my_wallet' to be able to run.
 press [enter] to create or type 'q' to cancel"""
-
 echo -n ''
 read option
 
