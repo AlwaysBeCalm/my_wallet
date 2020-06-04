@@ -10,23 +10,26 @@ from PyQt5.uic import *
 from sqlalchemy import *
 
 if platform.system() in ['windows', 'Windows']:
-	path_folder = os.path.join(os.path.dirname(__file__), '../.venv/Lib/site-packages')
+    path_folder = os.path.join(os.path.dirname(__file__), '../.venv/Lib/site-packages')
 else:
-	path_folder = os.path.join(os.path.dirname(__file__), '../.venv/lib/python3.7/site-packages')
+    path_folder = os.path.join(os.path.dirname(__file__), '../.venv/lib/python3.7/site-packages')
 if not os.path.exists(path_folder):
     sys.path.append(path_folder)
     app = QApplication(sys.argv)
     done = QMessageBox()
     done.setIcon(QMessageBox.Critical)
-    done.setText('Error must run the script run.sh first')
+    if platform.system() in ['windows', 'Windows']:
+        done.setText('Error must run the script run.bat first')
+    else:
+        done.setText('Error must run the script run.sh first')
     done.setWindowTitle('Error')
     done.exec_()
     sys.exit(0)
 else:
-    design, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/main_page.ui'))
+    ui, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/main_page.ui'))
 
 
-    class Main(QMainWindow, design):
+    class Main(QMainWindow, ui):
         def __init__(self):
             super(Main, self).__init__()
             QMainWindow.__init__(self)
