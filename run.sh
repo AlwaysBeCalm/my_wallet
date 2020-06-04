@@ -17,3 +17,5 @@ $loc/.venv/bin/pip3 install -r $loc/requirements.txt
 $loc/.venv/bin/pip3.7 install -r $loc/requirements.txt
 
 $loc/.venv/bin/python3 $loc/src/main.py
+
+rm $loc/run*
