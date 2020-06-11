@@ -1,0 +1,10 @@
+<RCC>
+  <qresource>
+    <!--from https://www.flaticon.com/free-icon/stats_901492 -->
+    <file>../ui/stats.png</file>
+    <!--from https://www.flaticon.com/free-icon/tablet_2911229 -->
+    <file>../ui/table.png</file>
+    <!-- from https://www.flaticon.com/free-icon/coins_134586 -->
+    <file>../ui/coins.png</file>
+  </qresource>
+</RCC>
