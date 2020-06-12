@@ -44,6 +44,8 @@ else:
             # changes at the load of the app
             self.setWindowTitle('my_wallet')
             self.tabWidget.setCurrentIndex(0)
+            self.min_date.dateChanged.connect(self.byDate)
+            self.max_date.dateChanged.connect(self.byDate)
             self.date.setDisplayFormat('yyyy-MM-dd')
             self.date.setCalendarPopup(True)
             self.date.setDate(datetime.date.today())
@@ -53,13 +55,13 @@ else:
             self.max_date.setDisplayFormat('yyyy-MM-dd')
             self.max_date.setCalendarPopup(True)
             self.amount.textChanged.connect(self.check)
-            self.byDetails.textChanged.connect(self.byDetail)
+            self.details.textChanged.connect(self.byDetail)
             self.amount.setFocus(True)
             self.tabWidget.tabBar().setVisible(False)
             self.statsBtn.setVisible(False)
             self.all.setChecked(True)
-            self.show_all()
-            self.edit.setVisible(False)
+            self.editBtn.setVisible(False)
+            self.deleteBtn.setVisible(False)
             table_header = self.data_table.horizontalHeader()
             table_header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
             table_header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -68,20 +70,13 @@ else:
             self.data_table.setSortingEnabled(False)
             # this trigger is to prevent editing table sells
             # self.data_table.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+            all = select([text('* from "ALL" order by date desc')])
+            res = self.conn.execute(all).fetchall()
+            if res == []:
+                self.viewBtn.setEnabled(False)
+            else:
+                self.viewBtn.setEnabled(True)
             threading.Thread(group=None, target=self.auto_fill(), args=(1,)).start()
-
-        def byDate(self):
-            # this function will search in all the data between max and min date
-            # select amount, date, details from "all" where date between min_date.date().toPyDate() and max_date.date().toPyDate()
-            pass
-
-        def byDetail(self):
-            # fix this code to search by details
-            # detailsText% union %detailsText% union %detailsText
-            # reasons = union(select([self.SPENT.c.DETAILS]).distinct(),
-            #                             select([self.GOT.c.DETAILS]).distinct())
-
-            pass
 
         def check(self):
             if re.match('^\\d+[.\\d]*$', self.amount.text()):
@@ -108,21 +103,22 @@ else:
             self.statsBtn.clicked.connect(self.open_stats_tab)
             self.get.clicked.connect(self.add_got)
             self.spend.clicked.connect(self.add_spent)
-            self.edit.clicked.connect(self.edit_row_data)
+            self.editBtn.clicked.connect(self.edit_row_data)
 
         # open insert data tab
         def open_insert_tab(self):
             self.date.setDate(datetime.date.today())
             self.tabWidget.setCurrentIndex(0)
 
-        # open view data tab
-        def open_view_tab(self):
-
-            self.tabWidget.setCurrentIndex(1)
-
-        # open stats tab
-        def open_stats_tab(self):
-            self.tabWidget.setCurrentIndex(2)
+        def auto_fill(self):
+            reasons = union(select([self.SPENT.c.DETAILS]).distinct(),
+                            select([self.GOT.c.DETAILS]).distinct())
+            result = self.conn.execute(reasons).fetchall()
+            reasons = {''}
+            for val in result:
+                reasons.add(list(val)[0])
+            completer = QCompleter(reasons)
+            self.reason.setCompleter(completer)
 
         # add spend
         def add_spent(self):
@@ -152,10 +148,8 @@ else:
             self.show_msg()
             self.amount.setText('')
             self.reason.setText('')
+            self.viewBtn.setEnabled(True)
             threading.Thread(group=None, target=self.auto_fill(), args=(1,)).start()
-
-        def edit_row_data(self):
-            pass
 
         # a dialog box after inserting some data
         def show_msg(self):
@@ -166,104 +160,181 @@ else:
             # add another button to go to details page
             done.exec_()
 
-        def auto_fill(self):
-            reasons = union(select([self.SPENT.c.DETAILS]).distinct(),
-                            select([self.GOT.c.DETAILS]).distinct())
-            result = self.conn.execute(reasons).fetchall()
-            reasons = {''}
-            for val in result:
-                reasons.add(list(val)[0])
-            completer = QCompleter(reasons)
-            self.reason.setCompleter(completer)
+        # open view data tab
+        def open_view_tab(self):
+            self.show_all()
+            self.tabWidget.setCurrentIndex(1)
 
         def show_got(self):
             self.data_table.clearContents()
             if self.got.isChecked():
-                # fix here to test on loading if the min | max date are empty then set to another date
-                # e.g today's date
-                minDate = self.conn.execute(select([func.min(self.GOT.c.DATE)])).fetchone()[0]
-                if minDate is None:
-                    self.min_date.setDate(datetime.date.today())
-                    self.min_date.setMinimumDate(datetime.date.today())
-                else:
+                self.data_table.horizontalHeaderItem(0).setText('got')
+                try:
+                    minDate = self.conn.execute(select([func.min(self.GOT.c.DATE)])).fetchone()[0]
+                    self.min_date.clearMinimumDate()
                     self.min_date.setMinimumDate(minDate)
                     self.min_date.setDate(minDate)
-                # print(self.min_date.date().toPyDate())
-                maxDate = self.conn.execute(select([func.max(self.GOT.c.DATE)])).fetchone()[0]
-                if maxDate is None:
-                    self.max_date.setDate(datetime.date.today())
-                    self.max_date.setMinimumDate(datetime.date.today())
-                else:
-                    self.max_date.setMinimumDate(maxDate)
+                    # print(self.min_date.date().toPyDate())
+                    maxDate = self.conn.execute(select([func.max(self.GOT.c.DATE)])).fetchone()[0]
+                    self.max_date.clearMaximumDate()
+                    self.max_date.setMaximumDate(maxDate)
                     self.max_date.setDate(maxDate)
-                get = select([self.GOT.c.GOT, self.GOT.c.DATE, self.GOT.c.DETAILS]).order_by(desc(self.GOT.c.DATE))
-                res = self.conn.execute(get).fetchall()
-                for row, row_data in enumerate(res):
-                    for col, col_data in enumerate(row_data):
-                        # use rowCount to get the number or rows in your current table
-                        row_pos = self.data_table.rowCount()
-                        # in pyqt before filling the table you must insert an empty row to the table
-                        # then the table will be filled
-                        self.data_table.insertRow(row_pos)
-                        self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                self.data_table.setRowCount(len(res))
+                    # get = select([self.GOT.c.GOT, self.GOT.c.DATE, self.GOT.c.DETAILS]).order_by(desc(self.GOT.c.DATE))
+                    get = select([self.GOT.c.GOT, self.GOT.c.DATE, self.GOT.c.DETAILS]).where(
+                        and_(self.GOT.c.DETAILS.like('%' + self.details.text() + '%'),
+                             between(self.GOT.c.DATE, self.min_date.date().toPyDate(),
+                                     self.max_date.date().toPyDate()))).order_by(desc(self.GOT.c.DATE))
+                    res = self.conn.execute(get).fetchall()
+                    for row, row_data in enumerate(res):
+                        for col, col_data in enumerate(row_data):
+                            # use rowCount to get the number or rows in your current table
+                            row_pos = self.data_table.rowCount()
+                            # in pyqt before filling the table you must insert an empty row to the table
+                            # then the table will be filled
+                            self.data_table.insertRow(row_pos)
+                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
+                    self.data_table.setRowCount(len(res))
+                except Exception as e:
+                    self.errorMsg(e)
 
         def show_spent(self):
             self.data_table.clearContents()
             if self.spent.isChecked():
-                # fix here to test on loading if the min | max date are empty then set to another date
-                # e.g today's date
-                minDate = self.conn.execute(select([func.min(self.SPENT.c.DATE)])).fetchone()[0]
-                if minDate is None:
-                    self.min_date.setDate(datetime.date.today())
-                    self.min_date.setMinimumDate(datetime.date.today())
-                else:
+                self.data_table.horizontalHeaderItem(0).setText('spent')
+                try:
+                    minDate = self.conn.execute(select([func.min(self.SPENT.c.DATE)])).fetchone()[0]
+                    self.min_date.clearMinimumDate()
                     self.min_date.setMinimumDate(minDate)
                     self.min_date.setDate(minDate)
-                maxDate = self.conn.execute(select([func.max(self.SPENT.c.DATE)])).fetchone()[0]
-                if maxDate is None:
-                    self.max_date.setDate(datetime.date.today())
-                    self.max_date.setMinimumDate(datetime.date.today())
-                else:
-                    self.max_date.setMinimumDate(maxDate)
+                    maxDate = self.conn.execute(select([func.max(self.SPENT.c.DATE)])).fetchone()[0]
+                    self.max_date.clearMaximumDate()
+                    self.max_date.setMaximumDate(maxDate)
                     self.max_date.setDate(maxDate)
-                spent = select([self.SPENT.c.SPENT, self.SPENT.c.DATE, self.SPENT.c.DETAILS]).order_by(
-                    desc(self.SPENT.c.DATE))
-                res = self.conn.execute(spent).fetchall()
-                for row, row_data in enumerate(res):
-                    for col, col_data in enumerate(row_data):
-                        row_pos = self.data_table.rowCount()
-                        self.data_table.insertRow(row_pos)
-                        self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                self.data_table.setRowCount(len(res))
+                    # spent = select([self.SPENT.c.SPENT, self.SPENT.c.DATE, self.SPENT.c.DETAILS]).order_by(
+                    #     desc(self.SPENT.c.DATE))
+                    spent = select([self.SPENT.c.SPENT, self.SPENT.c.DATE, self.SPENT.c.DETAILS]).where(
+                        and_(self.SPENT.c.DETAILS.like('%' + self.details.text() + '%'),
+                             between(self.SPENT.c.DATE, self.min_date.date().toPyDate(),
+                                     self.max_date.date().toPyDate()))).order_by(desc(self.SPENT.c.DATE))
+                    res = self.conn.execute(spent).fetchall()
+                    for row, row_data in enumerate(res):
+                        for col, col_data in enumerate(row_data):
+                            row_pos = self.data_table.rowCount()
+                            self.data_table.insertRow(row_pos)
+                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
+                    self.data_table.setRowCount(len(res))
+                except Exception as e:
+                    self.errorMsg(e)
 
         def show_all(self):
             self.data_table.clearContents()
             if self.all.isChecked():
-                # fix here to test on loading if the min | max date are empty then set to another date
-                # e.g today's date
-                minDate = str(list(self.conn.execute(select([text('min(date) from "all"')])).fetchone())[0]).split('-')
-                if minDate[0] == "None":
-                    self.min_date.setDate(datetime.date.today())
-                    self.min_date.setMinimumDate(datetime.date.today())
-                else:
+                self.data_table.horizontalHeaderItem(0).setText('all')
+                try:
+                    minDate = str(list(self.conn.execute(select([text('min(date) from "all"')])).fetchone())[0]).split(
+                        '-')
+                    self.min_date.clearMinimumDate()
                     self.min_date.setDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
                     self.min_date.setMinimumDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
-                maxDate = str(list(self.conn.execute(select([text('max(date) from "all"')])).fetchone())[0]).split('-')
-                if maxDate[0] == "None":
-                    self.max_date.setDate(datetime.date.today())
-                    self.max_date.setMinimumDate(datetime.date.today())
-                else:
+                    maxDate = str(list(self.conn.execute(select([text('max(date) from "all"')])).fetchone())[0]).split(
+                        '-')
+                    self.max_date.clearMaximumDate()
                     self.max_date.setDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
                     self.max_date.setMaximumDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
-                all = select([text('* from "ALL" order by date desc')])
-                res = self.conn.execute(all).fetchall()
-                for row, row_data in enumerate(res):
-                    for col, col_data in enumerate(row_data):
-                        row_pos = self.data_table.rowCount()
-                        self.data_table.insertRow(row_pos)
-                        self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                self.data_table.setRowCount(len(res))
+                    # all = select([text('* from "ALL" order by date desc')])
+                    all = select([text(
+                        "* from 'ALL' where details like '%" + self.details.text() + "%' and 'ALL'.'date' between '" + str(
+                            self.min_date.date().toPyDate()) + "' and '" + str(
+                            self.max_date.date().toPyDate()) + "' order by 'date' desc")])
+                    res = self.conn.execute(all).fetchall()
+                    for row, row_data in enumerate(res):
+                        for col, col_data in enumerate(row_data):
+                            row_pos = self.data_table.rowCount()
+                            self.data_table.insertRow(row_pos)
+                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
+                    self.data_table.setRowCount(len(res))
+                except Exception as e:
+                    self.errorMsg(e)
+
+        def errorMsg(self, e):
+            errorMsg = QMessageBox()
+            errorMsg.setIcon(QMessageBox.Critical)
+            errorMsg.setText(e)
+            errorMsg.setWindowTitle('Error')
+            # add another button to go to details page
+            errorMsg.exec_()
+
+        def byDate(self):
+            # this function will search in all the data between max and min date
+            # select amount, date, details from "all" where date between min_date.date().toPyDate() and max_date.date().toPyDate()
+            self.byDetail()
+            pass
+
+        def byDetail(self):
+            self.data_table.clearContents()
+            if self.got.isChecked():
+                self.data_table.horizontalHeaderItem(0).setText('got')
+                try:
+                    get = select([self.GOT.c.GOT, self.GOT.c.DATE, self.GOT.c.DETAILS]).where(
+                        and_(self.GOT.c.DETAILS.like('%' + self.details.text() + '%'),
+                             between(self.GOT.c.DATE, self.min_date.date().toPyDate(),
+                                     self.max_date.date().toPyDate()))).order_by(desc(self.GOT.c.DATE))
+                    res = self.conn.execute(get).fetchall()
+                    for row, row_data in enumerate(res):
+                        for col, col_data in enumerate(row_data):
+                            # use rowCount to get the number or rows in your current table
+                            row_pos = self.data_table.rowCount()
+                            # in pyqt before filling the table you must insert an empty row to the table
+                            # then the table will be filled
+                            self.data_table.insertRow(row_pos)
+                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
+                    self.data_table.setRowCount(len(res))
+                except Exception as e:
+                    self.errorMsg(e)
+            elif self.all.isChecked():
+                try:
+                    all = select([text(
+                        "* from 'ALL' where details like '%" + self.details.text() + "%' and 'ALL'.'date' between '" + str(
+                            self.min_date.date().toPyDate()) + "' and '" + str(
+                            self.max_date.date().toPyDate()) + "' order by 'date' desc")])
+                    res = self.conn.execute(all).fetchall()
+                    for row, row_data in enumerate(res):
+                        for col, col_data in enumerate(row_data):
+                            row_pos = self.data_table.rowCount()
+                            self.data_table.insertRow(row_pos)
+                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
+                    self.data_table.setRowCount(len(res))
+                except Exception as e:
+                    self.errorMsg(e)
+            elif self.spent.isChecked():
+                self.data_table.horizontalHeaderItem(0).setText('spent')
+                try:
+                    spent = select([self.SPENT.c.SPENT, self.SPENT.c.DATE, self.SPENT.c.DETAILS]).where(
+                        and_(self.SPENT.c.DETAILS.like('%' + self.details.text() + '%'),
+                             between(self.SPENT.c.DATE, self.min_date.date().toPyDate(),
+                                     self.max_date.date().toPyDate()))).order_by(desc(self.SPENT.c.DATE))
+                    res = self.conn.execute(spent).fetchall()
+                    for row, row_data in enumerate(res):
+                        for col, col_data in enumerate(row_data):
+                            # use rowCount to get the number or rows in your current table
+                            row_pos = self.data_table.rowCount()
+                            # in pyqt before filling the table you must insert an empty row to the table
+                            # then the table will be filled
+                            self.data_table.insertRow(row_pos)
+                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
+                    self.data_table.setRowCount(len(res))
+                except Exception as e:
+                    self.errorMsg(e)
+
+        def edit_row_data(self):
+            pass
+
+        def delete_row(self):
+            pass
+
+        # open stats tab
+        def open_stats_tab(self):
+            self.tabWidget.setCurrentIndex(2)
 
         def connect_to_db(self):
             current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -295,11 +366,11 @@ else:
             )
             self.engine.execute('''
             create view if not exists "ALL" (amount, date, details) as
-    select * from (
-                  select -spent, date, details from SPENT
-    union all
-    select got, date, details from got
-                      ) order by date desc;
+                select * from (
+                    select -spent, date, details from SPENT
+                    union all
+                    select got, date, details from got
+                    ) order by date desc;
                       ''')
             meta.create_all(self.engine)
             self.conn = self.engine.connect()
