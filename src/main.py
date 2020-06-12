@@ -4,7 +4,6 @@ import sys
 import re
 import platform
 import threading
-from PyQt5 import *
 from PyQt5.QtWidgets import *
 from PyQt5.uic import *
 from sqlalchemy import *
@@ -41,11 +40,10 @@ else:
             self.handle_buttons()
 
         def init_ui(self):
-            # changes at the load of the app
             self.setWindowTitle('my_wallet')
             self.tabWidget.setCurrentIndex(0)
-            self.min_date.dateChanged.connect(self.byDate)
-            self.max_date.dateChanged.connect(self.byDate)
+            self.min_date.dateChanged.connect(self.search)
+            self.max_date.dateChanged.connect(self.search)
             self.date.setDisplayFormat('yyyy-MM-dd')
             self.date.setCalendarPopup(True)
             self.date.setDate(datetime.date.today())
@@ -55,7 +53,7 @@ else:
             self.max_date.setDisplayFormat('yyyy-MM-dd')
             self.max_date.setCalendarPopup(True)
             self.amount.textChanged.connect(self.check)
-            self.details.textChanged.connect(self.byDetail)
+            self.details.textChanged.connect(self.search)
             self.amount.setFocus(True)
             self.tabWidget.tabBar().setVisible(False)
             self.statsBtn.setVisible(False)
@@ -110,6 +108,11 @@ else:
             self.date.setDate(datetime.date.today())
             self.tabWidget.setCurrentIndex(0)
 
+        # the next functions are all the events that will happen after
+        # opening the insert tab
+
+        # to set the reason text field to be autofilled by previous
+        # entered reasons
         def auto_fill(self):
             reasons = union(select([self.SPENT.c.DETAILS]).distinct(),
                             select([self.GOT.c.DETAILS]).distinct())
@@ -165,6 +168,10 @@ else:
             self.show_all()
             self.tabWidget.setCurrentIndex(1)
 
+        # the next functions are all the events that will happen after
+        # opening the view tab
+
+        # function which will fill the table from got table
         def show_got(self):
             self.data_table.clearContents()
             if self.got.isChecked():
@@ -195,8 +202,9 @@ else:
                             self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
                     self.data_table.setRowCount(len(res))
                 except Exception as e:
-                    self.errorMsg(e)
+                    pass
 
+        # function which will fill the table from spent table
         def show_spent(self):
             self.data_table.clearContents()
             if self.spent.isChecked():
@@ -224,8 +232,9 @@ else:
                             self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
                     self.data_table.setRowCount(len(res))
                 except Exception as e:
-                    self.errorMsg(e)
+                    pass
 
+        # function which will fill the table from 'all' view
         def show_all(self):
             self.data_table.clearContents()
             if self.all.isChecked():
@@ -254,23 +263,9 @@ else:
                             self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
                     self.data_table.setRowCount(len(res))
                 except Exception as e:
-                    self.errorMsg(e)
+                    pass
 
-        def errorMsg(self, e):
-            errorMsg = QMessageBox()
-            errorMsg.setIcon(QMessageBox.Critical)
-            errorMsg.setText(e)
-            errorMsg.setWindowTitle('Error')
-            # add another button to go to details page
-            errorMsg.exec_()
-
-        def byDate(self):
-            # this function will search in all the data between max and min date
-            # select amount, date, details from "all" where date between min_date.date().toPyDate() and max_date.date().toPyDate()
-            self.byDetail()
-            pass
-
-        def byDetail(self):
+        def search(self):
             self.data_table.clearContents()
             if self.got.isChecked():
                 self.data_table.horizontalHeaderItem(0).setText('got')
@@ -290,7 +285,7 @@ else:
                             self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
                     self.data_table.setRowCount(len(res))
                 except Exception as e:
-                    self.errorMsg(e)
+                    pass
             elif self.all.isChecked():
                 try:
                     all = select([text(
@@ -305,7 +300,7 @@ else:
                             self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
                     self.data_table.setRowCount(len(res))
                 except Exception as e:
-                    self.errorMsg(e)
+                    pass
             elif self.spent.isChecked():
                 self.data_table.horizontalHeaderItem(0).setText('spent')
                 try:
@@ -324,7 +319,7 @@ else:
                             self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
                     self.data_table.setRowCount(len(res))
                 except Exception as e:
-                    self.errorMsg(e)
+                    pass
 
         def edit_row_data(self):
             pass
