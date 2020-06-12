@@ -1,5 +1,3 @@
 database/*
-src/ToDo
-src/__*
 .idea/*
 .venv/*
