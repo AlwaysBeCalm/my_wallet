@@ -9,14 +9,14 @@ from PyQt5.QtWidgets import *
 from PyQt5.uic import *
 from sqlalchemy import *
 
+# these path is for debugging and fixing purposes, one can delete them and work on his directories
+# but it's preferable to work on this virtual environment which been downloaded through the scripts run.*
 if platform.system() in ['windows', 'Windows']:
     path_folder = os.path.join(os.path.dirname(__file__), '../.venv/Lib/site-packages')
-elif platform.system() in ['Darwin', 'darwin']:
-    path_folder = os.path.join('',
-                               os.path.dirname(__file__)+'/../.venv/lib/' + os.listdir(os.path.dirname(__file__)+'/../.venv/lib/')[0] + '/site-packages')
 else:
-    path_folder = os.path.join(os.path.dirname(__file__),
-                               '../.venv/lib/' + os.listdir('../.venv/lib/')[0] + '/site-packages')
+    path_folder = os.path.join('',
+                               os.path.dirname(__file__) + '/../.venv/lib/' +
+                               os.listdir(os.path.dirname(__file__) + '/../.venv/lib/')[0] + '/site-packages')
 if not os.path.exists(path_folder):
     sys.path.append(path_folder)
     app = QApplication(sys.argv)
