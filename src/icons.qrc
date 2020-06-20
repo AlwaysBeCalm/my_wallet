@@ -1,10 +1,18 @@
 <RCC>
   <qresource>
-    <!--from https://www.flaticon.com/free-icon/stats_901492 -->
+    <!--from https://www.flaticon.com/free-icon/refresh_875100-->
+    <file>../ui/refresh.png</file>
+    <!--from https://www.flaticon.com/free-icon/wallet_335812-->
+    <file>../ui/wallet.png</file>
+    <!--from https://www.flaticon.com/free-icon/eraser_847452-->
+    <file>../ui/clean.png</file>
+    <!--from https://www.flaticon.com/free-icon/wallet_335817-->
+    <file>../ui/wallet(1).png</file>
+    <!--from https://www.flaticon.com/free-icon/stats_901492-->
     <file>../ui/stats.png</file>
-    <!--from https://www.flaticon.com/free-icon/tablet_2911229 -->
+    <!--from https://www.flaticon.com/free-icon/tablet_2911229-->
     <file>../ui/table.png</file>
-    <!-- from https://www.flaticon.com/free-icon/coins_134586 -->
+    <!--from https://www.flaticon.com/free-icon/coins_134586-->
     <file>../ui/coins.png</file>
   </qresource>
 </RCC>
