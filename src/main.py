@@ -232,7 +232,7 @@ else:
                     self.max_date.clearMaximumDate()
                     self.max_date.setMaximumDate(maxDate)
                     self.max_date.setDate(maxDate)
-                    self.max.setMinimumDate(minDate)
+                    self.max_date.setMinimumDate(minDate)
                     get = select([self.GOT]).where(
                         and_(self.GOT.c.DETAILS.like('%' + self.details.text() + '%'),
                              between(self.GOT.c.DATE, self.min_date.date().toPyDate(),
@@ -265,7 +265,7 @@ else:
                     self.max_date.clearMaximumDate()
                     self.max_date.setMaximumDate(maxDate)
                     self.max_date.setDate(maxDate)
-                    self.max.setMinimumDate(minDate)
+                    self.max_date.setMinimumDate(minDate)
                     spent = select([self.SPENT]).where(
                         and_(self.SPENT.c.DETAILS.like('%' + self.details.text() + '%'),
                              between(self.SPENT.c.DATE, self.min_date.date().toPyDate(),
