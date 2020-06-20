@@ -11,6 +11,9 @@ from sqlalchemy import *
 
 if platform.system() in ['windows', 'Windows']:
     path_folder = os.path.join(os.path.dirname(__file__), '../.venv/Lib/site-packages')
+elif platform.system() in ['Darwin', 'darwin']:
+    path_folder = os.path.join('',
+                               os.path.dirname(__file__)+'/../.venv/lib/' + os.listdir(os.path.dirname(__file__)+'/../.venv/lib/')[0] + '/site-packages')
 else:
     path_folder = os.path.join(os.path.dirname(__file__),
                                '../.venv/lib/' + os.listdir('../.venv/lib/')[0] + '/site-packages')
