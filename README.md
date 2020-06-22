@@ -21,5 +21,5 @@ after that execute <b>run.bat</b> and it will download the required libraries fo
     * after that execute <b>bash run.sh</b> and it will download the required libraries for the app
   
 3. after that every time you want to run the app
-    * on widows just double click main.py which is in src folder
-    * on linux or mac os open terminal in src folder then execute *python3 main.py*
+    * on widows open cmd or powershell my_wallet directory then execute '.\.venv\Scripts\python.exe .\src\main.py' (or python3.exe if it's exists in the Scripts folder)
+    * on linux or mac os open terminal my_wallet directory then execute './.venv/bin/python3 src/main.py'
