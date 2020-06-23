@@ -47,36 +47,36 @@ else:
         def init_ui(self):
             self.setWindowTitle('my_wallet')
             self.tabWidget.setCurrentIndex(0)
-            self.min_date.dateChanged.connect(self.search)
-            self.max_date.dateChanged.connect(self.search)
+            self.tabWidget.tabBar().setVisible(False)
             self.date.setDisplayFormat('yyyy-MM-dd')
             self.date.setCalendarPopup(True)
             self.date.setDate(datetime.date.today())
             self.date.setMaximumDate(datetime.date.today())  # set maximum date in the calendar is today's date
+            self.min_date.dateChanged.connect(self.search)
             self.min_date.setDisplayFormat('yyyy-MM-dd')
             self.min_date.setCalendarPopup(True)
             self.max_date.setDisplayFormat('yyyy-MM-dd')
             self.max_date.setCalendarPopup(True)
+            self.max_date.dateChanged.connect(self.search)
             self.amount.textChanged.connect(self.check)
-            self.details.textChanged.connect(self.search)
             self.amount.setFocus(True)
-            self.tabWidget.tabBar().setVisible(False)
+            self.details.textChanged.connect(self.search)
             self.statsBtn.setVisible(False)
             self.all.setChecked(True)
             self.editBtn.setVisible(False)
             self.deleteBtn.setVisible(False)
-            self.data_table.cellChanged.connect(self.prep_data)
+            # self.data_table.cellChanged.connect(self.select_items)
             self.data_table.verticalHeader().hide()
             self.data_table.hideColumn(0)
             self.data_table.clicked.connect(self.select_items)
-            table_header = self.data_table.horizontalHeader()
-            table_header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
-            table_header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
-            table_header.setSectionResizeMode(3, QHeaderView.Stretch)
             # this to prevent sorting table cols
             self.data_table.setSortingEnabled(False)
             # this trigger is to prevent editing table sells
             # self.data_table.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
+            table_header = self.data_table.horizontalHeader()
+            table_header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+            table_header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+            table_header.setSectionResizeMode(3, QHeaderView.Stretch)
             _all_ = select([text('* from "ALL" order by date desc')])
             res = self.conn.execute(_all_).fetchall()
             if not res:
@@ -84,24 +84,6 @@ else:
             else:
                 self.viewBtn.setEnabled(True)
             threading.Thread(group=None, target=self.auto_fill(), args=(1,)).start()
-
-        def prep_data(self):
-            idx = self.data_table.currentIndex()
-            self.data_table.selectRow(int(idx.row()))
-            self._id_ = self.data_table.model().data(self.data_table.model().index(idx.row(), 0))
-            self._amount_ = self.data_table.model().data(self.data_table.model().index(idx.row(), 1))
-            # i think it's better to use transient object
-            self.prep_values = [self._id_]
-            try:
-                for j, i in enumerate(self.data_table.selectedItems()):
-                    if j == 1:
-                        d = i.text().split('-')
-                        dt = datetime.date(int(d[0]), int(d[1]), int(d[2]))
-                        self.prep_values.append(dt)
-                    else:
-                        self.prep_values.append(i.text())
-            except Exception as e:
-                pass
 
         def select_items(self):
             # this function is to get the current row
@@ -368,27 +350,27 @@ else:
             if self.all.isChecked():
                 if float(self._amount_) < 0:
                     self.updt = self.SPENT.update().where(self.SPENT.c.ID == self._id_).values(
-                        SPENT=math.fabs(float(self.prep_values[1])),
-                        DATE=self.prep_values[2],
-                        DETAILS=self.prep_values[3])
+                        SPENT=math.fabs(float(self.values[1])),
+                        DATE=self.values[2],
+                        DETAILS=self.values[3])
                 else:
-                    self.updt = self.GOT.update().where(self.GOT.c.ID == self._id_).values(GOT=self.prep_values[1],
-                                                                                           DATE=self.prep_values[2],
-                                                                                           DETAILS=self.prep_values[3])
+                    self.updt = self.GOT.update().where(self.GOT.c.ID == self._id_).values(GOT=self.values[1],
+                                                                                           DATE=self.values[2],
+                                                                                           DETAILS=self.values[3])
                 self.conn.execute(self.updt)
                 self.show_msg('updated')
                 self.show_all()
             elif self.got.isChecked():
-                self.updt = self.GOT.update().where(self.GOT.c.ID == self._id_).values(GOT=self.prep_values[1],
-                                                                                       DATE=self.prep_values[2],
-                                                                                       DETAILS=self.prep_values[3])
+                self.updt = self.GOT.update().where(self.GOT.c.ID == self._id_).values(GOT=self.values[1],
+                                                                                       DATE=self.values[2],
+                                                                                       DETAILS=self.values[3])
                 self.conn.execute(self.updt)
                 self.show_msg('updated')
                 self.show_got()
             elif self.spent.isChecked():
-                self.updt = self.SPENT.update().where(self.SPENT.c.ID == self._id_).values(SPENT=self.prep_values[1],
-                                                                                           DATE=self.prep_values[2],
-                                                                                           DETAILS=self.prep_values[3])
+                self.updt = self.SPENT.update().where(self.SPENT.c.ID == self._id_).values(SPENT=self.values[1],
+                                                                                           DATE=self.values[2],
+                                                                                           DETAILS=self.values[3])
                 self.conn.execute(self.updt)
                 self.show_msg('updated')
                 self.show_spent()
