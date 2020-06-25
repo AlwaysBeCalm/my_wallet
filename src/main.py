@@ -107,20 +107,6 @@ else:
             self.deleteBtn.setVisible(True)
             self.editBtn.setVisible(True)
 
-        def check(self):
-            if re.match('^\\d+[.\\d]*$', self.amount.text()):
-                self.get.setEnabled(True)
-                self.spend.setEnabled(True)
-                self.reason.setPlaceholderText('reason')
-            elif self.amount.text() == '':
-                self.reason.setPlaceholderText('reason')
-                self.get.setEnabled(False)
-                self.spend.setEnabled(False)
-            else:
-                self.reason.setPlaceholderText('the amount field takes only numbers')
-                self.get.setEnabled(False)
-                self.spend.setEnabled(False)
-
         def handle_radio_buttons(self):
             self.all.toggled.connect(self.show_all)
             self.got.toggled.connect(self.show_got)
@@ -141,17 +127,19 @@ else:
             self.date.setDate(datetime.date.today())
             self.tabWidget.setCurrentIndex(0)
 
-        # to set the reason text field to be autofilled by previous
-        # entered reasons
-        def auto_fill(self):
-            reasons = union(select([self.SPENT.c.DETAILS]).distinct(),
-                            select([self.GOT.c.DETAILS]).distinct())
-            result = self.conn.execute(reasons).fetchall()
-            reasons = {''}
-            for val in result:
-                reasons.add(list(val)[0])
-            completer = QCompleter(reasons)
-            self.reason.setCompleter(completer)
+        def check(self):
+            if re.match('^\\d+[.\\d]*$', self.amount.text()):
+                self.get.setEnabled(True)
+                self.spend.setEnabled(True)
+                self.reason.setPlaceholderText('reason')
+            elif self.amount.text() == '':
+                self.reason.setPlaceholderText('reason')
+                self.get.setEnabled(False)
+                self.spend.setEnabled(False)
+            else:
+                self.reason.setPlaceholderText('the amount field takes only numbers')
+                self.get.setEnabled(False)
+                self.spend.setEnabled(False)
 
         # add spend
         def add_spent(self):
@@ -192,6 +180,18 @@ else:
             done.setWindowTitle('Info')
             # add another button to go to details page
             done.exec_()
+
+        # to set the reason text field to be autofilled by previous
+        # entered reasons
+        def auto_fill(self):
+            reasons = union(select([self.SPENT.c.DETAILS]).distinct(),
+                            select([self.GOT.c.DETAILS]).distinct())
+            result = self.conn.execute(reasons).fetchall()
+            reasons = {''}
+            for val in result:
+                reasons.add(list(val)[0])
+            completer = QCompleter(reasons)
+            self.reason.setCompleter(completer)
 
         # open view data tab
         def open_view_tab(self):
