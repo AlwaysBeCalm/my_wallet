@@ -209,25 +209,25 @@ else:
         def set_data(self, table_name):
             if table_name.lower() == 'got':
                 self.set_dates('got')
-                data = select([self.GOT]).where(
+                query = select([self.GOT]).where(
                     and_(self.GOT.c.DETAILS.like('%' + self.details.text() + '%'),
                          between(self.GOT.c.DATE, self.min_date.date().toPyDate(),
                                  self.max_date.date().toPyDate()))).order_by(desc(self.GOT.c.DATE)).order_by(
                     desc(self.GOT.c.ID))
             elif table_name.lower() == 'spent':
                 self.set_dates('spent')
-                data = select([self.SPENT]).where(
+                query = select([self.SPENT]).where(
                     and_(self.SPENT.c.DETAILS.like('%' + self.details.text() + '%'),
                          between(self.SPENT.c.DATE, self.min_date.date().toPyDate(),
                                  self.max_date.date().toPyDate()))).order_by(desc(self.SPENT.c.DATE)).order_by(
                     desc(self.SPENT.c.ID))
             elif table_name.lower() == 'all':
                 self.set_dates('all')
-                data = select([text(
+                query = select([text(
                     "* from 'ALL' where details like '%" + self.details.text() + "%' and 'ALL'.'date' between '" + str(
                         self.min_date.date().toPyDate()) + "' and '" + str(
                         self.max_date.date().toPyDate()) + "' order by 'date' desc")])
-            res = self.conn.execute(data).fetchall()
+            res = self.conn.execute(query).fetchall()
             for row, row_data in enumerate(res):
                 for col, col_data in enumerate(row_data):
                     # use rowCount to get the number or rows in your current table
