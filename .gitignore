@@ -1,3 +1,7 @@
 database/*
 .idea/*
 .venv/*
+src/__*
+src/tbl.py
+src/ToDo
+.gitignore
