@@ -63,12 +63,12 @@ else:
             self.details.textChanged.connect(self.search)
             self.statsBtn.setVisible(False)
             self.all.setChecked(True)
-            self.editBtn.setVisible(False)
+            self.updateBtn.setVisible(False)
             self.deleteBtn.setVisible(False)
             # self.data_table.cellChanged.connect(self.select_items)
             self.data_table.verticalHeader().hide()
             self.data_table.hideColumn(0)
-            self.data_table.clicked.connect(self.select_items)
+            self.data_table.clicked.connect(self.show_button)
             # this to prevent sorting table cols
             self.data_table.setSortingEnabled(False)
             # this trigger is to prevent editing table sells
@@ -85,28 +85,6 @@ else:
                 self.viewBtn.setEnabled(True)
             threading.Thread(group=None, target=self.auto_fill(), args=(1,)).start()
 
-        def select_items(self):
-            # this function is to get the current row
-            # get the id of the selected row
-            # to select the entire row
-            idx = self.data_table.currentIndex()
-            row = idx.row()
-            col = idx.column()
-            self.data_table.selectRow(int(idx.row()))
-            self._id_ = self.data_table.model().data(self.data_table.model().index(idx.row(), 0))
-            self._amount_ = self.data_table.model().data(self.data_table.model().index(idx.row(), 1))
-            self.values = [self._id_]
-            for j, i in enumerate(self.data_table.selectedItems()):
-                if j == 1:
-                    d = i.text().split('-')
-                    dt = datetime.date(int(d[0]), int(d[1]), int(d[2]))
-                    self.values.append(dt)
-                else:
-                    self.values.append(i.text())
-            self.data_table.setCurrentCell(row, col)
-            self.deleteBtn.setVisible(True)
-            self.editBtn.setVisible(True)
-
         def handle_radio_buttons(self):
             self.all.toggled.connect(self.show_all)
             self.got.toggled.connect(self.show_got)
@@ -118,7 +96,7 @@ else:
             self.statsBtn.clicked.connect(self.open_stats_tab)
             self.get.clicked.connect(self.add_got)
             self.spend.clicked.connect(self.add_spent)
-            self.editBtn.clicked.connect(self.edit_row_data)
+            self.updateBtn.clicked.connect(self.update_row)
             self.deleteBtn.clicked.connect(self.delete_row)
 
         # the next functions are all the events that will happen after
@@ -143,16 +121,13 @@ else:
 
         # add spend
         def add_spent(self):
-            self.add_to('spent')
+            self.add_to('spent', self.amount.text(), self.reason.text(), self.date.date())
 
         # add get
         def add_got(self):
-            self.add_to('got')
+            self.add_to('got', self.amount.text(), self.reason.text(), self.date.date())
 
-        def add_to(self, table_name):
-            amount = self.amount.text()
-            reason = self.reason.text()
-            date = self.date.date()
+        def add_to(self, table_name, amount, reason, date):
             proper_date = datetime.datetime(date.year(), date.month(), date.day())
             if table_name.lower() == 'spent':
                 if reason == '':
@@ -181,8 +156,7 @@ else:
             # add another button to go to details page
             done.exec_()
 
-        # to set the reason text field to be autofilled by previous
-        # entered reasons
+        # to set the reason text field to be autofilled by previous entered reasons
         def auto_fill(self):
             reasons = union(select([self.SPENT.c.DETAILS]).distinct(),
                             select([self.GOT.c.DETAILS]).distinct())
@@ -201,6 +175,68 @@ else:
 
         # the next functions are all the events that will happen after
         # opening the view tab
+        def set_dates(self, table_name):
+            if table_name.lower() == 'all':
+                minDate = str(list(self.conn.execute(select([text('min(date) from "all"')])).fetchone())[0]).split(
+                    '-')
+                maxDate = str(list(self.conn.execute(select([text('max(date) from "all"')])).fetchone())[0]).split(
+                    '-')
+                self.min_date.clearMinimumDate()
+                self.min_date.setDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
+                self.min_date.setMinimumDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
+                self.min_date.setMaximumDate(datetime.date.today())
+                self.max_date.clearMaximumDate()
+                self.max_date.setDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
+                self.max_date.setMaximumDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
+                self.max_date.setMinimumDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
+                return
+            else:
+                if table_name.lower() == 'got':
+                    minDate = self.conn.execute(select([func.min(self.GOT.c.DATE)])).fetchone()[0]
+                    maxDate = self.conn.execute(select([func.max(self.GOT.c.DATE)])).fetchone()[0]
+                elif table_name.lower() == 'spent':
+                    minDate = self.conn.execute(select([func.min(self.SPENT.c.DATE)])).fetchone()[0]
+                    maxDate = self.conn.execute(select([func.max(self.SPENT.c.DATE)])).fetchone()[0]
+                self.min_date.clearMinimumDate()
+                self.min_date.setMinimumDate(minDate)
+                self.min_date.setDate(minDate)
+                self.min_date.setMaximumDate(datetime.date.today())
+                self.max_date.clearMaximumDate()
+                self.max_date.setMaximumDate(maxDate)
+                self.max_date.setDate(maxDate)
+                self.max_date.setMinimumDate(minDate)
+
+        def set_data(self, table_name):
+            if table_name.lower() == 'got':
+                self.set_dates('got')
+                data = select([self.GOT]).where(
+                    and_(self.GOT.c.DETAILS.like('%' + self.details.text() + '%'),
+                         between(self.GOT.c.DATE, self.min_date.date().toPyDate(),
+                                 self.max_date.date().toPyDate()))).order_by(desc(self.GOT.c.DATE)).order_by(
+                    desc(self.GOT.c.ID))
+            elif table_name.lower() == 'spent':
+                self.set_dates('spent')
+                data = select([self.SPENT]).where(
+                    and_(self.SPENT.c.DETAILS.like('%' + self.details.text() + '%'),
+                         between(self.SPENT.c.DATE, self.min_date.date().toPyDate(),
+                                 self.max_date.date().toPyDate()))).order_by(desc(self.SPENT.c.DATE)).order_by(
+                    desc(self.SPENT.c.ID))
+            elif table_name.lower() == 'all':
+                self.set_dates('all')
+                data = select([text(
+                    "* from 'ALL' where details like '%" + self.details.text() + "%' and 'ALL'.'date' between '" + str(
+                        self.min_date.date().toPyDate()) + "' and '" + str(
+                        self.max_date.date().toPyDate()) + "' order by 'date' desc")])
+            res = self.conn.execute(data).fetchall()
+            for row, row_data in enumerate(res):
+                for col, col_data in enumerate(row_data):
+                    # use rowCount to get the number or rows in your current table
+                    row_pos = self.data_table.rowCount()
+                    # in pyqt before filling the table you must insert an empty row to the table
+                    # then the table will be filled
+                    self.data_table.insertRow(row_pos)
+                    self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
+            self.data_table.setRowCount(len(res))
 
         # function which will fill the table from got table
         def show_got(self):
@@ -208,30 +244,7 @@ else:
             if self.got.isChecked():
                 self.data_table.horizontalHeaderItem(1).setText('got')
                 try:
-                    minDate = self.conn.execute(select([func.min(self.GOT.c.DATE)])).fetchone()[0]
-                    self.min_date.clearMinimumDate()
-                    self.min_date.setMinimumDate(minDate)
-                    self.min_date.setDate(minDate)
-                    self.min_date.setMaximumDate(datetime.date.today())
-                    maxDate = self.conn.execute(select([func.max(self.GOT.c.DATE)])).fetchone()[0]
-                    self.max_date.clearMaximumDate()
-                    self.max_date.setMaximumDate(maxDate)
-                    self.max_date.setDate(maxDate)
-                    self.max_date.setMinimumDate(minDate)
-                    get = select([self.GOT]).where(
-                        and_(self.GOT.c.DETAILS.like('%' + self.details.text() + '%'),
-                             between(self.GOT.c.DATE, self.min_date.date().toPyDate(),
-                                     self.max_date.date().toPyDate()))).order_by(desc(self.GOT.c.DATE))
-                    res = self.conn.execute(get).fetchall()
-                    for row, row_data in enumerate(res):
-                        for col, col_data in enumerate(row_data):
-                            # use rowCount to get the number or rows in your current table
-                            row_pos = self.data_table.rowCount()
-                            # in pyqt before filling the table you must insert an empty row to the table
-                            # then the table will be filled
-                            self.data_table.insertRow(row_pos)
-                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                    self.data_table.setRowCount(len(res))
+                    self.set_data('GOT')
                 except Exception as e:
                     pass
 
@@ -241,27 +254,7 @@ else:
             if self.spent.isChecked():
                 self.data_table.horizontalHeaderItem(1).setText('spent')
                 try:
-                    minDate = self.conn.execute(select([func.min(self.SPENT.c.DATE)])).fetchone()[0]
-                    self.min_date.clearMinimumDate()
-                    self.min_date.setMinimumDate(minDate)
-                    self.min_date.setDate(minDate)
-                    self.min_date.setMaximumDate(datetime.date.today())
-                    maxDate = self.conn.execute(select([func.max(self.SPENT.c.DATE)])).fetchone()[0]
-                    self.max_date.clearMaximumDate()
-                    self.max_date.setMaximumDate(maxDate)
-                    self.max_date.setDate(maxDate)
-                    self.max_date.setMinimumDate(minDate)
-                    spent = select([self.SPENT]).where(
-                        and_(self.SPENT.c.DETAILS.like('%' + self.details.text() + '%'),
-                             between(self.SPENT.c.DATE, self.min_date.date().toPyDate(),
-                                     self.max_date.date().toPyDate()))).order_by(desc(self.SPENT.c.DATE))
-                    res = self.conn.execute(spent).fetchall()
-                    for row, row_data in enumerate(res):
-                        for col, col_data in enumerate(row_data):
-                            row_pos = self.data_table.rowCount()
-                            self.data_table.insertRow(row_pos)
-                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                    self.data_table.setRowCount(len(res))
+                    self.set_data('SPENT')
                 except Exception as e:
                     pass
 
@@ -271,29 +264,7 @@ else:
             if self.all.isChecked():
                 self.data_table.horizontalHeaderItem(1).setText('amount')
                 try:
-                    minDate = str(list(self.conn.execute(select([text('min(date) from "all"')])).fetchone())[0]).split(
-                        '-')
-                    self.min_date.clearMinimumDate()
-                    self.min_date.setDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
-                    self.min_date.setMinimumDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
-                    self.min_date.setMaximumDate(datetime.date.today())
-                    maxDate = str(list(self.conn.execute(select([text('max(date) from "all"')])).fetchone())[0]).split(
-                        '-')
-                    self.max_date.clearMaximumDate()
-                    self.max_date.setDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
-                    self.max_date.setMaximumDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
-                    self.max_date.setMinimumDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
-                    all = select([text(
-                        "* from 'ALL' where details like '%" + self.details.text() + "%' and 'ALL'.'date' between '" + str(
-                            self.min_date.date().toPyDate()) + "' and '" + str(
-                            self.max_date.date().toPyDate()) + "' order by 'date' desc")])
-                    res = self.conn.execute(all).fetchall()
-                    for row, row_data in enumerate(res):
-                        for col, col_data in enumerate(row_data):
-                            row_pos = self.data_table.rowCount()
-                            self.data_table.insertRow(row_pos)
-                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                    self.data_table.setRowCount(len(res))
+                    self.set_data('ALL')
                 except Exception as e:
                     pass
 
@@ -301,114 +272,116 @@ else:
             self.data_table.clearContents()
             if self.got.isChecked():
                 try:
-                    get = select([self.GOT]).where(
-                        and_(self.GOT.c.DETAILS.like('%' + self.details.text() + '%'),
-                             between(self.GOT.c.DATE, self.min_date.date().toPyDate(),
-                                     self.max_date.date().toPyDate()))).order_by(desc(self.GOT.c.DATE))
-                    res = self.conn.execute(get).fetchall()
-                    for row, row_data in enumerate(res):
-                        for col, col_data in enumerate(row_data):
-                            row_pos = self.data_table.rowCount()
-                            self.data_table.insertRow(row_pos)
-                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                    self.data_table.setRowCount(len(res))
+                    self.set_data('GOT')
                 except Exception as e:
                     pass
             elif self.all.isChecked():
                 try:
-                    all = select([text(
-                        "* from 'ALL' where details like '%" + self.details.text() + "%' and 'ALL'.'date' between '" + str(
-                            self.min_date.date().toPyDate()) + "' and '" + str(
-                            self.max_date.date().toPyDate()) + "' order by 'date' desc")])
-                    res = self.conn.execute(all).fetchall()
-                    for row, row_data in enumerate(res):
-                        for col, col_data in enumerate(row_data):
-                            row_pos = self.data_table.rowCount()
-                            self.data_table.insertRow(row_pos)
-                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                    self.data_table.setRowCount(len(res))
+                    self.set_data('ALL')
                 except Exception as e:
                     pass
             elif self.spent.isChecked():
                 try:
-                    spent = select([self.SPENT]).where(
-                        and_(self.SPENT.c.DETAILS.like('%' + self.details.text() + '%'),
-                             between(self.SPENT.c.DATE, self.min_date.date().toPyDate(),
-                                     self.max_date.date().toPyDate()))).order_by(desc(self.SPENT.c.DATE))
-                    res = self.conn.execute(spent).fetchall()
-                    for row, row_data in enumerate(res):
-                        for col, col_data in enumerate(row_data):
-                            row_pos = self.data_table.rowCount()
-                            self.data_table.insertRow(row_pos)
-                            self.data_table.setItem(row, col, QTableWidgetItem(str(col_data)))
-                    self.data_table.setRowCount(len(res))
+                    self.set_data('SPENT')
                 except Exception as e:
                     pass
 
-        def edit_row_data(self):
+        def show_button(self):
+            self.deleteBtn.setVisible(True)
+            self.updateBtn.setVisible(True)
+
+        def select_items(self):
+            # this function is to get the current row
+            # get the id of the selected row
+            # to select the entire row
+            idx = self.data_table.currentIndex()
+            row = idx.row()
+            col = idx.column()
+            self.data_table.selectRow(int(idx.row()))
+            self._id_ = self.data_table.model().data(self.data_table.model().index(idx.row(), 0))
+            self._amount_ = self.data_table.model().data(self.data_table.model().index(idx.row(), 1))
+            self.values = [self._id_]
+            for j, i in enumerate(self.data_table.selectedItems()):
+                if j == 1:
+                    d = i.text().split('-')
+                    dt = datetime.date(int(d[0]), int(d[1]), int(d[2]))
+                    self.values.append(dt)
+                else:
+                    self.values.append(i.text())
+            self.data_table.setCurrentCell(row, col)
+
+        def update_data(self, amount, date, details, table_name):
+            if table_name.lower() == 'spent':
+                _update_ = self.SPENT.update().where(self.SPENT.c.ID == self._id_).values(
+                    SPENT=amount,
+                    DATE=date,
+                    DETAILS=details
+                )
+                self.conn.execute(_update_)
+                self.show_msg('updated')
+                return
+
+            elif table_name.lower() == 'got':
+                _update_ = self.GOT.update().where(self.GOT.c.ID == self._id_).values(
+                    GOT=amount,
+                    DATE=date,
+                    DETAILS=details
+                )
+                self.conn.execute(_update_)
+                self.show_msg('updated')
+                return
+
+        def update_row(self):
+            self.select_items()
             self.conn = self.engine.connect()
             if self.all.isChecked():
                 if float(self._amount_) < 0:
-                    self.updt = self.SPENT.update().where(self.SPENT.c.ID == self._id_).values(
-                        SPENT=math.fabs(float(self.values[1])),
-                        DATE=self.values[2],
-                        DETAILS=self.values[3])
+                    self.update_data(math.fabs(float(self.values[1])), self.values[2], self.values[3], 'SPENT')
                 else:
-                    self.updt = self.GOT.update().where(self.GOT.c.ID == self._id_).values(GOT=self.values[1],
-                                                                                           DATE=self.values[2],
-                                                                                           DETAILS=self.values[3])
-                self.conn.execute(self.updt)
-                self.show_msg('updated')
+                    self.update_data(self.values[1], self.values[2], self.values[3], 'GOT')
                 self.show_all()
             elif self.got.isChecked():
-                self.updt = self.GOT.update().where(self.GOT.c.ID == self._id_).values(GOT=self.values[1],
-                                                                                       DATE=self.values[2],
-                                                                                       DETAILS=self.values[3])
-                self.conn.execute(self.updt)
-                self.show_msg('updated')
+                self.update_data(self.values[1], self.values[2], self.values[3], 'GOT')
                 self.show_got()
             elif self.spent.isChecked():
-                self.updt = self.SPENT.update().where(self.SPENT.c.ID == self._id_).values(SPENT=self.values[1],
-                                                                                           DATE=self.values[2],
-                                                                                           DETAILS=self.values[3])
-                self.conn.execute(self.updt)
-                self.show_msg('updated')
+                self.update_data(math.fabs(float(self.values[1])), self.values[2], self.values[3], 'SPENT')
                 self.show_spent()
             self.deleteBtn.setVisible(False)
-            self.editBtn.setVisible(False)
+            self.updateBtn.setVisible(False)
+
+        def delete_from(self, table_name, _id_):
+            if table_name.lower() == 'spent':
+                _delete_ = self.SPENT.delete().where(self.SPENT.c.ID == _id_)
+            elif table_name.lower() == 'got':
+                _delete_ = self.GOT.delete().where(self.GOT.c.ID == _id_)
+            self.conn.execute(_delete_)
+            self.show_msg('deleted')
 
         def delete_row(self):
-            question = QMessageBox.question(self, 'DELETE CONFIRMATION',
+            self.select_items()
+            question = QMessageBox.critical(self, 'DELETE CONFIRMATION',
                                             'Are you sure you want to delete the selected data?',
                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if question == QMessageBox.Yes:
                 self.conn = self.engine.connect()
                 if self.all.isChecked():
                     if float(self._amount_) < 0:
-                        self.dlt = self.SPENT.delete().where(self.SPENT.c.ID == self._id_)
-                        self.conn.execute(self.dlt)
-                        self.show_msg('deleted')
+                        self.delete_from('SPENT', self._id_)
                         self.show_all()
                     else:
-                        self.dlt = self.GOT.delete().where(self.GOT.c.ID == self._id_)
-                        self.conn.execute(self.dlt)
-                        self.show_msg('deleted')
+                        self.delete_from('GOT', self._id_)
                         self.show_all()
                 elif self.got.isChecked():
-                    self.dlt = self.GOT.delete().where(self.GOT.c.ID == self._id_)
-                    self.conn.execute(self.dlt)
-                    self.show_msg('deleted')
+                    self.delete_from('GOT', self._id_)
                     self.show_got()
                 elif self.spent.isChecked():
-                    self.dlt = self.SPENT.delete().where(self.SPENT.c.ID == self._id_)
-                    self.conn.execute(self.dlt)
-                    self.show_msg('deleted')
+                    self.delete_from('SPENT', self._id_)
                     self.show_spent()
                 self.deleteBtn.setVisible(False)
-                self.editBtn.setVisible(False)
+                self.updateBtn.setVisible(False)
             else:
                 self.deleteBtn.setVisible(False)
-                self.editBtn.setVisible(False)
+                self.updateBtn.setVisible(False)
 
         # open stats tab
         def open_stats_tab(self):
