@@ -6,3 +6,4 @@ src/tbl.py
 src/ToDo
 .gitignore
 .vscode/*
+ui/app.py
