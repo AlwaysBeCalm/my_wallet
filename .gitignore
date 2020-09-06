@@ -2,9 +2,7 @@ database/*
 .idea/*
 .venv/*
 src/__*
-src/tbl.py
 src/ToDo
-.gitignore
 .vscode/*
 ui/app.py
 run.bat
