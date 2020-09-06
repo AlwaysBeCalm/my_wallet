@@ -38,6 +38,7 @@ class Main(QMainWindow, ui):
         self.max_date.dateChanged.connect(self.search)
         self.amount.textChanged.connect(self.check)
         self.amount.setFocus(True)
+        self.amount.setMaxLength(8)
         self.details.textChanged.connect(self.search)
         self.statsBtn.setVisible(False)
         self.all.setChecked(True)
