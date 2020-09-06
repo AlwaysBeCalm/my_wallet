@@ -1,9 +1,6 @@
 database/*
 .idea/*
-.venv/*
 src/__*
 src/ToDo
-.vscode/*
-ui/app.py
-run.bat
-run.sh
+tbl*
+run*
