@@ -7,3 +7,5 @@ src/ToDo
 .gitignore
 .vscode/*
 ui/app.py
+run.bat
+run.sh
