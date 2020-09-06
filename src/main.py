@@ -2,7 +2,6 @@ import datetime
 import os
 import sys
 import re
-import platform
 import threading
 import math
 from PyQt5.QtWidgets import *
@@ -401,40 +400,40 @@ class Main(QMainWindow, ui):
             # sqlite_autoincrement=True,
         )
         self.engine.execute('''
-            create view if not exists "ALL" (id, amount, date, details) as
-                select * from (
-                    select id, -spent, date, details from SPENT
-                    union all
-                    select id, got, date, details from got
-                    ) order by date desc;
-                      ''')
-        self.engine.execute('''
-            CREATE TRIGGER if not exists trg_update_GOT_details_after_insert after insert on GOT
-                when NEW.DETAILS like ''
-                begin
-                    update GOT set DETAILS = 'no details' where ROWID = last_insert_rowid();
-                end;
+            CREATE VIEW IF NOT EXISTS "ALL" (ID, AMOUNT, DATE, DETAILS) AS
+                SELECT * FROM (
+                    SELECT ID, -SPENT, DATE, DETAILS FROM SPENT
+                    UNION ALL 
+                    SELECT ID, GOT, DATE, DETAILS FROM GOT
+                    ) ORDER BY DATE DESC ;
                 ''')
         self.engine.execute('''
-            CREATE TRIGGER if not exists trg_update_GOT_details_after_update after update on GOT
-                when NEW.DETAILS like ''
-                begin
-                    update GOT set DETAILS = 'no details' where ROWID = new.ID;
-                end;
+            CREATE TRIGGER IF NOT EXISTS trg_update_GOT_details_after_insert AFTER INSERT ON GOT
+                WHEN NEW.DETAILS LIKE ''
+                BEGIN 
+                    UPDATE GOT SET DETAILS = 'no details' WHERE ROWID = last_insert_rowid();
+                END ;
                 ''')
         self.engine.execute('''
-            CREATE TRIGGER if not exists trg_update_SPENT_details_after_insert after insert on SPENT
-                when NEW.DETAILS like ''
-                begin
-                    update SPENT set DETAILS = 'no details' where ROWID = last_insert_rowid();
-                end;
+            CREATE TRIGGER IF NOT EXISTS trg_update_GOT_details_after_update AFTER UPDATE ON GOT
+                WHEN NEW.DETAILS LIKE ''
+                BEGIN 
+                    UPDATE GOT SET DETAILS = 'no details' WHERE ROWID = NEW.ID;
+                END ;
                 ''')
         self.engine.execute('''
-            CREATE TRIGGER if not exists trg_update_SPENT_details_after_update after update on SPENT
-                when NEW.DETAILS like ''
-                begin
-                    update SPENT set DETAILS = 'no details' where ROWID = new.ID;
-                end;
+            CREATE TRIGGER IF NOT EXISTS trg_update_SPENT_details_after_insert AFTER INSERT ON SPENT
+                WHEN NEW.DETAILS LIKE ''
+                BEGIN
+                    UPDATE SPENT SET DETAILS = 'no details' WHERE ROWID = last_insert_rowid();
+                END ;
+                ''')
+        self.engine.execute('''
+            CREATE TRIGGER IF NOT EXISTS trg_update_SPENT_details_after_update AFTER UPDATE ON SPENT
+                WHEN NEW.DETAILS LIKE ''
+                BEGIN
+                    UPDATE SPENT SET DETAILS = 'no details' WHERE ROWID = NEW.ID;
+                END ;
                 ''')
         meta.create_all(self.engine)
         self.conn = self.engine.connect()
