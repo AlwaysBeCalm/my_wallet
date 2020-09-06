@@ -148,7 +148,7 @@
       <string>show got</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="editBtn">
+    <widget class="QPushButton" name="updateBtn">
      <property name="geometry">
       <rect>
        <x>471</x>
