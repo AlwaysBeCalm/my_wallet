@@ -11,9 +11,10 @@ written in python3 with SQLAlchemy framework and PyQt5 for the gui
 
 ### installation:
 1. download (either download zip file, or clone the repo).
-2. ```pip``` or ```pip3 install -r requirments.txt``` in terminal or cmd to install required packages.
+2. better to run `bash run.sh` or `linux` or `MacOS`
+3. or you can run ```pip``` or ```pip3 install -r requirments.txt``` in terminal or cmd to install required packages.
 3. * run ```python3 src/main.py``` in terminal (linux and osx) to run the app.
-   * on windows just double click ```main.py``` which is inside `src` folder.
+   * on Windows just double click ```main.py``` which is inside `src` folder.
 
 # Screenshots:
 1- when the application starts, it will show the insert data page
