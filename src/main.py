@@ -12,6 +12,8 @@ ui, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/app.ui'))
 
 
 class Main(QMainWindow, ui):
+
+    # the initialization for the app
     def __init__(self):
         super(Main, self).__init__()
         QMainWindow.__init__(self)
@@ -22,6 +24,7 @@ class Main(QMainWindow, ui):
         self.handle_radio_buttons()
         self.handle_buttons()
 
+    # the initialization for the UI
     def init_ui(self):
         self.setWindowTitle('my_wallet')
         self.tabWidget.setCurrentIndex(0)
@@ -64,11 +67,13 @@ class Main(QMainWindow, ui):
             self.viewBtn.setEnabled(True)
         threading.Thread(group=None, target=self.auto_fill(), args=(1,)).start()
 
+    # the radio buttons actions
     def handle_radio_buttons(self):
         self.all.toggled.connect(self.show_all)
         self.got.toggled.connect(self.show_got)
         self.spent.toggled.connect(self.show_spent)
 
+    # the buttons actions
     def handle_buttons(self):
         self.insertBtn.clicked.connect(self.open_insert_tab)
         self.viewBtn.clicked.connect(self.open_view_tab)
@@ -84,6 +89,7 @@ class Main(QMainWindow, ui):
         self.date.setDate(datetime.date.today())
         self.tabWidget.setCurrentIndex(0)
 
+    # to check is the amount field has numbers only or not.
     def check(self):
         if re.match('^\\d+[.\\d]*$', self.amount.text()):
             self.get.setEnabled(True)
@@ -102,22 +108,17 @@ class Main(QMainWindow, ui):
     def add_spent(self):
         self.add_to('spent', self.amount.text(), self.reason.text(), self.date.date())
 
-    # add get
+    # add got
     def add_got(self):
         self.add_to('got', self.amount.text(), self.reason.text(), self.date.date())
 
+    # this function will add the given data to the specified table_name
     def add_to(self, table_name, amount, reason, date):
         proper_date = datetime.datetime(date.year(), date.month(), date.day())
         if table_name.lower() == 'spent':
-            if reason == '':
-                self.ins = self.SPENT.insert().values(SPENT=amount, DETAILS='no details', DATE=proper_date)
-            else:
-                self.ins = self.SPENT.insert().values(SPENT=amount, DETAILS=reason, DATE=proper_date)
+            self.ins = self.SPENT.insert().values(SPENT=amount, DETAILS=reason, DATE=proper_date)
         elif table_name.lower() == 'got':
-            if reason == '':
-                self.ins = self.GOT.insert().values(GOT=amount, DETAILS='no details', DATE=proper_date)
-            else:
-                self.ins = self.GOT.insert().values(GOT=amount, DETAILS=reason, DATE=proper_date)
+            self.ins = self.GOT.insert().values(GOT=amount, DETAILS=reason, DATE=proper_date)
         self.conn = self.engine.connect()
         self.conn.execute(self.ins)
         self.show_msg('inserted')
