@@ -156,34 +156,34 @@ class Main(QMainWindow, ui):
     # opening the view tab
     def set_dates(self, table_name):
         if table_name.lower() == 'all':
-            minDate = str(list(self.conn.execute(select([text('min(date) from "all"')])).fetchone())[0]).split(
+            min_date = str(list(self.conn.execute(select([text('min(date) from "all"')])).fetchone())[0]).split(
                 '-')
-            maxDate = str(list(self.conn.execute(select([text('max(date) from "all"')])).fetchone())[0]).split(
+            max_date = str(list(self.conn.execute(select([text('max(date) from "all"')])).fetchone())[0]).split(
                 '-')
             self.min_date.clearMinimumDate()
-            self.min_date.setDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
-            self.min_date.setMinimumDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
+            self.min_date.setDate(datetime.date(int(min_date[0]), int(min_date[1]), int(min_date[2])))
+            self.min_date.setMinimumDate(datetime.date(int(min_date[0]), int(min_date[1]), int(min_date[2])))
             self.min_date.setMaximumDate(datetime.date.today())
             self.max_date.clearMaximumDate()
-            self.max_date.setDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
-            self.max_date.setMaximumDate(datetime.date(int(maxDate[0]), int(maxDate[1]), int(maxDate[2])))
-            self.max_date.setMinimumDate(datetime.date(int(minDate[0]), int(minDate[1]), int(minDate[2])))
+            self.max_date.setDate(datetime.date(int(max_date[0]), int(max_date[1]), int(max_date[2])))
+            self.max_date.setMaximumDate(datetime.date(int(max_date[0]), int(max_date[1]), int(max_date[2])))
+            self.max_date.setMinimumDate(datetime.date(int(min_date[0]), int(min_date[1]), int(min_date[2])))
             return
         else:
             if table_name.lower() == 'got':
-                minDate = self.conn.execute(select([func.min(self.GOT.c.DATE)])).fetchone()[0]
-                maxDate = self.conn.execute(select([func.max(self.GOT.c.DATE)])).fetchone()[0]
+                min_date = self.conn.execute(select([func.min(self.GOT.c.DATE)])).fetchone()[0]
+                max_date = self.conn.execute(select([func.max(self.GOT.c.DATE)])).fetchone()[0]
             elif table_name.lower() == 'spent':
-                minDate = self.conn.execute(select([func.min(self.SPENT.c.DATE)])).fetchone()[0]
-                maxDate = self.conn.execute(select([func.max(self.SPENT.c.DATE)])).fetchone()[0]
+                min_date = self.conn.execute(select([func.min(self.SPENT.c.DATE)])).fetchone()[0]
+                max_date = self.conn.execute(select([func.max(self.SPENT.c.DATE)])).fetchone()[0]
             self.min_date.clearMinimumDate()
-            self.min_date.setMinimumDate(minDate)
-            self.min_date.setDate(minDate)
+            self.min_date.setMinimumDate(min_date)
+            self.min_date.setDate(min_date)
             self.min_date.setMaximumDate(datetime.date.today())
             self.max_date.clearMaximumDate()
-            self.max_date.setMaximumDate(maxDate)
-            self.max_date.setDate(maxDate)
-            self.max_date.setMinimumDate(minDate)
+            self.max_date.setMaximumDate(max_date)
+            self.max_date.setDate(max_date)
+            self.max_date.setMinimumDate(min_date)
 
     def set_data(self, table_name):
         if table_name.lower() == 'got':
@@ -400,6 +400,7 @@ class Main(QMainWindow, ui):
             Column('DETAILS', String(255)),
             # sqlite_autoincrement=True,
         )
+        meta.create_all(self.engine)
         self.engine.execute('''
             CREATE VIEW IF NOT EXISTS "ALL" (ID, AMOUNT, DATE, DETAILS) AS
                 SELECT * FROM (
