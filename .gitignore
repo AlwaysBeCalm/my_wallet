@@ -1,6 +1,4 @@
 database/*
 .idea/*
 src/__*
-src/ToDo
-tbl*
-run*
+venv/
