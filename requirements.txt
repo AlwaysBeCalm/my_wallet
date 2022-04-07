@@ -1,6 +1,5 @@
-greenlet==1.0.0
-pkg-resources==0.0.0
-PyQt5==5.15.4
+greenlet==1.1.2
+PyQt5==5.15.6
 PyQt5-Qt5==5.15.2
-PyQt5-sip==12.8.1
-SQLAlchemy==1.4.13
+PyQt5-sip==12.9.1
+SQLAlchemy==1.4.35
